@@ -1,0 +1,4 @@
+/home/paulinka/cpp/inzynierka/build/CMakeFiles/TestOpenCV.dir
+/home/paulinka/cpp/inzynierka/build/CMakeFiles/edit_cache.dir
+/home/paulinka/cpp/inzynierka/build/CMakeFiles/rebuild_cache.dir
+/home/paulinka/cpp/inzynierka/build/CMakeFiles/TestOpenCV_autogen.dir
