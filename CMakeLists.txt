@@ -25,7 +25,7 @@ set(CMAKE_AUTOMOC ON)
 find_package(Qt5Widgets)
 
 
-add_executable(TestOpenCV main.cpp)
+add_executable(TestOpenCV main.cpp CEyeDetection.cpp CEyeDetection.h CKalman.cpp CKalman.h)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED )
 target_link_libraries(TestOpenCV Qt5::Widgets ${OpenCV_LIBS}  Threads::Threads ${X11_LIBRARIES} )#dlib::dlib )#Qt5::Widgets Qt5::Qt5Core)

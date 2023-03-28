@@ -1,3 +1,0 @@
-/home/paulinka/cpp/inzynierka/CMakeFiles/TestOpenCV.dir
-/home/paulinka/cpp/inzynierka/CMakeFiles/edit_cache.dir
-/home/paulinka/cpp/inzynierka/CMakeFiles/rebuild_cache.dir
