@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     cv::VideoCapture CapturedImage;
     cv::Mat mainImage,grayScaleImage;
     CEyeDetection eyeDetectionObject;
-
+    eyeDetectionObject.m_bIfEyesFound=false;
     if(!CapturedImage.open("/dev/video0"))
         throw std::runtime_error("Kamera nie działa");
 
@@ -34,49 +34,43 @@ int main(int argc, char *argv[]) {
     eyeCascade.load("haarcascade_eye.xml.2");
     if(eyeCascade.empty() || faceCascade.empty())
         std::cout << "Brak kaskady" << std::endl;
-
-
-
     while(cv::waitKey(20)!=27) {
-
         CapturedImage >> mainImage;
         cvtColor(mainImage, grayScaleImage, cv::COLOR_RGB2GRAY);
-        resize(mainImage, eyeDetectionObject.temp,cv::Size( mainImage.cols, mainImage.rows), cv::INTER_LINEAR);
 
-        //kom
-        if(!eyeDetectionObject.boolEye) {
+        if(!eyeDetectionObject.m_bIfEyesFound) {
             try {
-                eyeDetectionObject.faceCascade(faceCascade, grayScaleImage, mainImage);
+                eyeDetectionObject.FaceCascade(faceCascade, grayScaleImage);
             }catch (...) {
                 continue;
             }                               //If face not detected, skip the rest of the loop
+            try {
+                eyeDetectionObject.EyeCascade(eyeCascade, grayScaleImage);
+            }catch (...) {
+                continue;
+            }                               //If eyes not detected, skip the rest of the loop
 
-            eyeDetectionObject.eyeCascade(eyeCascade, mainImage, grayScaleImage);
-            eyeDetectionObject.cutEyesArea(grayScaleImage);
-            eyeDetectionObject.StworzenieEkranuZInformacja("Prosze patrzec w kamere laptopa do momentu uslyszenia dzwieku");
+            eyeDetectionObject.CutEyesArea(grayScaleImage);
+            eyeDetectionObject.InfoBoard("Prosze patrzec w kamere laptopa do momentu uslyszenia dzwieku");
 
-            eyeDetectionObject.findingCircles(mainImage);
-            eyeDetectionObject.whereAreCircles(mainImage, display);
-            eyeDetectionObject.BlinkingDetection(eyeDetectionObject.m_mEyeCutPicture[0],display);
-
-
+            eyeDetectionObject.FindingCircles(mainImage);
+            eyeDetectionObject.BlinkingDetection(eyeDetectionObject.m_mEyeCutPicture[0], display);
         }
         else {
-            eyeDetectionObject.whereAreCircles(mainImage, display);
-            eyeDetectionObject.BlinkingDetection(eyeDetectionObject.m_mEyeCutPicture[0],display);
-            eyeDetectionObject.trackRightEye(mainImage);
+            eyeDetectionObject.FindingCircles(mainImage);
+            eyeDetectionObject.BlinkingDetection(eyeDetectionObject.m_mEyeCutPicture[0], display);
+            eyeDetectionObject.TrackFoundEye(mainImage);
 
             Kalman.actualKalman(eyeDetectionObject, mainImage);
 
-            if (!eyeDetectionObject.skalibrowano) {
-                eyeDetectionObject.StworzenieEkranuZInformacja("Teraz nastapi kalibracja. Prosze wzrokiem sledzic kropke.");
+            if (!eyeDetectionObject.m_bIfCalibrated) {
+                eyeDetectionObject.InfoBoard("Teraz nastapi kalibracja. Prosze wzrokiem sledzic kropke.");
                 eyeDetectionObject.Calibration();
             }
             else {
                 eyeDetectionObject.PositionOnDisplay(eyeDetectionObject.m_rEyeRect);
-
-                eyeDetectionObject.PositionOnDisplay(Kalman.predRect);
-                eyeDetectionObject.PokazanieNaEkranie(display);
+                eyeDetectionObject.PositionOnDisplay(Kalman.m_rPredRect);
+                eyeDetectionObject.ShowOnDisplay(display);
             }
         }
     }

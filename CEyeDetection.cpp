@@ -1,6 +1,6 @@
 #include "CEyeDetection.h"
 
-void CEyeDetection::faceCascade(cv::CascadeClassifier Cascade, cv::Mat grayScaleImage)
+void CEyeDetection::FaceCascade(cv::CascadeClassifier Cascade, cv::Mat grayScaleImage)
 {
     Cascade.detectMultiScale(grayScaleImage, m_rDetectedFaces, 1.1, 15,
                              0 | cv::CASCADE_SCALE_IMAGE, cv::Size(0, 0));
@@ -9,7 +9,7 @@ void CEyeDetection::faceCascade(cv::CascadeClassifier Cascade, cv::Mat grayScale
 
 }
 
-void CEyeDetection::eyeCascade(cv::CascadeClassifier eyeCascade, cv::Mat grayScaleImage)
+void CEyeDetection::EyeCascade(cv::CascadeClassifier eyeCascade, cv::Mat grayScaleImage)
 {
     static auto start = std::chrono::high_resolution_clock::now();
     cv::Mat FaceRight;
@@ -36,10 +36,11 @@ void CEyeDetection::eyeCascade(cv::CascadeClassifier eyeCascade, cv::Mat graySca
     }
     else
         start = std::chrono::high_resolution_clock::now();
+    m_bIfEyesFound=true;
     m_rEyeRectPrev=m_rDetectedEyes[0];  //Using first object in vector because it is most likely detected the right eye
 }
 
-void CEyeDetection::cutEyesArea( cv::Mat grayScaleImage) {
+void CEyeDetection::CutEyesArea(cv::Mat grayScaleImage) {
     cv::Mat eyesKernel = (cv::Mat_<double>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
     cv::Rect tempEye;
 
@@ -59,7 +60,7 @@ void CEyeDetection::cutEyesArea( cv::Mat grayScaleImage) {
     }
 }
 
-cv::Point CEyeDetection::segmentation(cv::Mat wejsciowe){
+cv::Point CEyeDetection::Segmentation(cv::Mat inputImage){
     cv::Mat eyesKernel = (cv::Mat_<double>(3, 3) << 0, 1, 0, 1, -4, 1, 0, 1, 0);
     cv::Rect tempEye;
     cv::Mat src;
@@ -69,7 +70,7 @@ cv::Point CEyeDetection::segmentation(cv::Mat wejsciowe){
         tempEye.height = m_rDetectedEyes[0].height / 2;
         tempEye.x=m_rDetectedEyes[0].x;
         tempEye.width=m_rDetectedEyes[0].width;
-        src = wejsciowe(tempEye);
+        src = inputImage(tempEye);
 
         cv::Mat mask;
         inRange(src, cv::Scalar(255, 255, 255), cv::Scalar(255, 255, 255), mask);
@@ -153,12 +154,12 @@ cv::Point CEyeDetection::segmentation(cv::Mat wejsciowe){
         for (size_t i = 0; i < circles.size(); i++) {
             c = circles[i];
             center = cv::Point(c[0], c[1]);
-            // circle center
-            circle(wejsciowe, cv::Point(center.x + m_rDetectedEyes[0].x, center.y+m_rDetectedEyes[0].height/4+ m_rDetectedEyes[0].y), 1,
+            // circle m_pCenter
+            circle(inputImage, cv::Point(center.x + m_rDetectedEyes[0].x, center.y + m_rDetectedEyes[0].height / 4 + m_rDetectedEyes[0].y), 1,
                    cv::Scalar(255, 150, 0), 3, cv::LINE_AA);
             // circle outline
             int a = c[2];
-            circle(wejsciowe, cv::Point(center.x + m_rDetectedEyes[0].x, center.y +m_rDetectedEyes[0].height/4+ m_rDetectedEyes[0].y), a,
+            circle(inputImage, cv::Point(center.x + m_rDetectedEyes[0].x, center.y + m_rDetectedEyes[0].height / 4 + m_rDetectedEyes[0].y), a,
                    cv::Scalar(25, 200, 255), 3, cv::LINE_AA);
         }
 
@@ -182,7 +183,7 @@ cv::Point CEyeDetection::segmentation(cv::Mat wejsciowe){
     }
 }
 
-void CEyeDetection::findingCircles(cv::Mat& mainImage) {
+void CEyeDetection::FindingCircles(cv::Mat& mainImage) {
     std::vector<cv::Vec3f> IrisCicles;
     if (!m_mEyeCutPicture.empty()) {
         cv::HoughCircles(m_mEyeCutPicture[0], IrisCicles, cv::HOUGH_GRADIENT, 1.5,
@@ -202,7 +203,7 @@ void CEyeDetection::findingCircles(cv::Mat& mainImage) {
                 m_rEyeRect.y = m_pEyeCenter.y +m_rDetectedEyes[0].height / 4- m_iEyeRadius + m_rDetectedEyes[0].y;
                 m_rEyeRect.width = 2 * m_iEyeRadius;
                 m_rEyeRect.height = 2 * m_iEyeRadius;
-                m_EyeMat=mainImage(m_rEyeRect).clone();
+                m_mEyeMat=mainImage(m_rEyeRect).clone();
             }
             m_pEyeCenterPrev = m_pEyeCenter;
         }
@@ -239,7 +240,7 @@ std::pair<double, double> CEyeDetection::FitLine(cv::Mat Image){
         return std::make_pair(0,0);
 }
 
-void CEyeDetection::BlinkingDetection(cv::Mat grayScaleImage,Display* display)
+void CEyeDetection::BlinkingDetection(cv::Mat grayScaleImage, Display* display)
 {
     std::pair<double, double> line= FitLine(grayScaleImage);
     static int i = 0;
@@ -264,12 +265,12 @@ void CEyeDetection::BlinkingDetection(cv::Mat grayScaleImage,Display* display)
     }
 }
 
-void CEyeDetection::trackRightEye( cv::Mat& mainFrame) {
+void CEyeDetection::TrackFoundEye(cv::Mat& mainFrame) {
     cv::Rect window(m_rDetectedEyes[0].x + m_rDetectedEyes[0].width / 4, m_rDetectedEyes[0].y,
                     m_rDetectedEyes[0].width, m_rDetectedEyes[0].height);
 
-    cv::Mat dst(window.width - m_EyeMat.rows / 4 + 1, window.height - m_EyeMat.cols / 4 + 1, CV_32FC1);
-    cv::matchTemplate(mainFrame(window), m_EyeMat, dst, cv::TM_SQDIFF_NORMED);
+    cv::Mat dst(window.width - m_mEyeMat.rows / 4 + 1, window.height - m_mEyeMat.cols / 4 + 1, CV_32FC1);
+    cv::matchTemplate(mainFrame(window), m_mEyeMat, dst, cv::TM_SQDIFF_NORMED);
     double minval, maxval;
     cv::Point minloc, maxloc;
     cv::minMaxLoc(dst, &minval, &maxval, &minloc, &maxloc);
@@ -281,15 +282,15 @@ void CEyeDetection::trackRightEye( cv::Mat& mainFrame) {
 
 void CEyeDetection::PositionOnDisplay(cv::Rect rect){
 
-    float OkoNaEkranieCmX=1920*(srodekWyliczonyX-(rect.x+rect.width/2))/roznicaX;
-    float OkoNaEkranieCmY=1080*(srodekWyliczonyY-(rect.y+rect.height/2))/roznicaY;
+    float OkoNaEkranieCmX= 1920 * (m_pIrisCenterPoint.x - (rect.x + rect.width / 2)) / m_pDelta.x;
+    float OkoNaEkranieCmY= 1080 * (m_pIrisCenterPoint.y - (rect.y + rect.height / 2)) / m_pDelta.y;
 
-    okoNaEkraniePX.x=OkoNaEkranieCmX+960;
-    okoNaEkraniePX.y=540-OkoNaEkranieCmY;
+    m_pEyePositionOnDisplay.x= OkoNaEkranieCmX + 960;
+    m_pEyePositionOnDisplay.y= 540 - OkoNaEkranieCmY;
 }
 
-void CEyeDetection::StworzenieEkranuZInformacja(std::string sInfo) {
-    cv::Mat Info(EkranPx.y, EkranPx.x, CV_8UC3, cv::Scalar(0, 0, 0));
+void CEyeDetection::InfoBoard(std::string sInfo) {
+    cv::Mat Info(m_pDisplaySize.y, m_pDisplaySize.x, CV_8UC3, cv::Scalar(0, 0, 0));
     namedWindow("Info", cv::WINDOW_NORMAL);
     setWindowProperty("Info", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
     putText(Info, sInfo, cv::Point2f(50, 150), cv::FONT_ITALIC, 1, cv::Scalar(0, 0, 255), 2, 8, false);
@@ -299,14 +300,19 @@ void CEyeDetection::StworzenieEkranuZInformacja(std::string sInfo) {
 
 void CEyeDetection::Calibration(){
     cv::destroyWindow("Info");
-    cv::Mat konfiguracja(EkranPx.y, EkranPx.x, CV_8UC3, cv::Scalar(0, 0, 0));
+    cv::Mat konfiguracja(m_pDisplaySize.y, m_pDisplaySize.x, CV_8UC3, cv::Scalar(0, 0, 0));
     namedWindow("Konfiguracja", cv::WINDOW_NORMAL);
     setWindowProperty("Konfiguracja", cv::WND_PROP_FULLSCREEN, cv::WINDOW_FULLSCREEN);
 
+    int h = 50;
+    int j=50;
+
     circle(konfiguracja, cv::Point(h, j), 50, cv::Scalar(250, 0, 125), cv::FILLED);
+
+    std::vector<int> ZebranePunktyX, ZebranePunktyY;
     ZebranePunktyX.push_back(m_rEyeRect.x + m_rEyeRect.width / 2);
     ZebranePunktyY.push_back(m_rEyeRect.y + m_rEyeRect.height / 2);
-    if(!skalibrowano)
+    if(!m_bIfCalibrated)
         imshow("Konfiguracja", konfiguracja);
 
     circle(konfiguracja, cv::Point(h, j), 50, cv::Scalar(0, 0, 0), cv::FILLED);
@@ -319,17 +325,18 @@ void CEyeDetection::Calibration(){
     else if(h==50 && j>50)
         j-=25;
     if(h==50 && j==50)
-        skalibrowano=true;
-    if(skalibrowano) {
+        m_bIfCalibrated=true;
+    if(m_bIfCalibrated) {
 
         circle(konfiguracja, cv::Point(50, 50), 50, cv::Scalar(0, 0, 0), cv::FILLED);
 
-        roznicaX = *std::max_element(ZebranePunktyX.begin(), ZebranePunktyX.end()) -
+        cv::Rect MaxEkran;
+        m_pDelta.x = *std::max_element(ZebranePunktyX.begin(), ZebranePunktyX.end()) -
                    *std::min_element(ZebranePunktyX.begin(), ZebranePunktyX.end());
-        roznicaY = *std::max_element(ZebranePunktyY.begin(), ZebranePunktyY.end()) -
-                   *std::min_element(ZebranePunktyY.begin(), ZebranePunktyY.end());
-        srodekWyliczonyX=*std::max_element(ZebranePunktyX.begin(), ZebranePunktyX.end())-roznicaX/2;
-        srodekWyliczonyY=*std::max_element(ZebranePunktyY.begin(), ZebranePunktyY.end())-roznicaY/2;
+        m_pDelta.y = *std::max_element(ZebranePunktyY.begin(), ZebranePunktyY.end()) -
+                    *std::min_element(ZebranePunktyY.begin(), ZebranePunktyY.end());
+        m_pIrisCenterPoint.x= *std::max_element(ZebranePunktyX.begin(), ZebranePunktyX.end()) - m_pDelta.x / 2;
+        m_pIrisCenterPoint.y= *std::max_element(ZebranePunktyY.begin(), ZebranePunktyY.end()) - m_pDelta.y / 2;
         MaxEkran.x=*std::min_element(ZebranePunktyX.begin(), ZebranePunktyX.end());
         MaxEkran.y=*std::min_element(ZebranePunktyY.begin(), ZebranePunktyY.end());
         MaxEkran.width=*std::max_element(ZebranePunktyY.begin(), ZebranePunktyY.end())-*std::min_element(ZebranePunktyY.begin(), ZebranePunktyY.end());
@@ -338,12 +345,12 @@ void CEyeDetection::Calibration(){
     }
 }
 
-void CEyeDetection::PokazanieNaEkranie(Display *display)
+void CEyeDetection::ShowOnDisplay(Display *display)
 {
     Window root_window;
     root_window = XRootWindow(display, 0);
     XSelectInput(display, root_window, KeyReleaseMask);
-    XWarpPointer(display, None, root_window, 0,0,1920,1080,okoNaEkraniePX.x, okoNaEkraniePX.y);
+    XWarpPointer(display, None, root_window, 0, 0, 1920, 1080, m_pEyePositionOnDisplay.x, m_pEyePositionOnDisplay.y);
     XSync(display, False);
 
     if(m_bIfBlinked==True)
